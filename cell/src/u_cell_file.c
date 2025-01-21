@@ -458,6 +458,8 @@ int32_t uCellFileBlockRead(uDeviceHandle_t cellHandle,
     int32_t indicatedReadSize = 0;
     int32_t fileHandle = 0;
     char buffer[20];
+    char buffer_cmp[sizeof(buffer)];
+    bool matched = true;
 
     if (gUCellPrivateMutex != NULL) {
 
@@ -518,9 +520,15 @@ int32_t uCellFileBlockRead(uDeviceHandle_t cellHandle,
                         uAtClientWriteInt(atHandle, indicatedReadSize);
                         uAtClientCommandStop(atHandle);
                         // Wait for "CONNECT <size>" to come and skip it.
-                        snprintf(buffer, sizeof(buffer), "CONNECT %d\r\n", (int) indicatedReadSize);
-                        uAtClientResponseStart(atHandle, buffer);
-                        // Don't stop for anything!
+                        snprintf(buffer, sizeof(buffer), "CONNECT %d", (int) indicatedReadSize);
+                        uAtClientResponseStart(atHandle, NULL);
+                        readSize = uAtClientReadString(atHandle, buffer_cmp, strlen(buffer) + 1, false);
+                        if ( (strlen(buffer) != strlen(buffer_cmp)) || (strcmp(buffer, buffer_cmp) != 0))
+                        {
+                            matched = false;
+                            errorCode = U_ERROR_COMMON_UNKNOWN;
+                        }
+                            // report some error?
                         uAtClientIgnoreStopTag(atHandle);
                         readSize = uAtClientReadBytes(atHandle, pData,
                                                       (size_t)  (unsigned) indicatedReadSize,
@@ -529,7 +537,7 @@ int32_t uCellFileBlockRead(uDeviceHandle_t cellHandle,
                         // we finish
                         uAtClientRestoreStopTag(atHandle);
                         uAtClientResponseStop(atHandle);
-                        if (uAtClientUnlock(atHandle) == 0) {
+                        if ((uAtClientUnlock(atHandle) == 0) && matched) {
                             errorCode = readSize;
                         }
                         uAtClientLock(atHandle);
