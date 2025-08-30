@@ -1720,7 +1720,7 @@ static int32_t publish(const uCellPrivateInstance_t *pInstance,
                                                        U_MQTT_CLIENT_RESPONSE_WAIT_SECONDS) &&
                                ((pContext->pKeepGoingCallback == NULL) ||
                                 pContext->pKeepGoingCallback())) {
-                            uPortTaskBlock(1000);
+                            uPortTaskBlock(100);
 #ifndef U_CELL_MQTT_POKE_DURING_PUBLISH_DISABLE
                             // When UART power saving is switched on some
                             // modules (e.g. SARA-R422) can sometimes
